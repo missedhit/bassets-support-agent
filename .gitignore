@@ -1,0 +1,16 @@
+# Environment
+.env
+venv/
+__pycache__/
+*.pyc
+
+# Data files (don't commit customer data to git)
+data/pdfs/*
+data/zoho/*
+data/docs/*
+data/transcripts/*
+!data/**/.gitkeep
+
+# IDE
+.vscode/
+.idea/
