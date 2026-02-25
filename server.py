@@ -229,6 +229,20 @@ async def health_check():
     )
 
 
+@app.get("/health/debug")
+async def health_debug():
+    """Debug endpoint — shows which API keys are configured (not their values)."""
+    from config import PINECONE_API_KEY, VOYAGE_API_KEY
+    return {
+        "ANTHROPIC_API_KEY": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "PINECONE_API_KEY": bool(PINECONE_API_KEY),
+        "VOYAGE_API_KEY": bool(VOYAGE_API_KEY),
+        "PINECONE_INDEX_NAME": os.environ.get("PINECONE_INDEX_NAME", "(default: bassets-support)"),
+        "APP_ENV": APP_ENV,
+        "PORT": os.environ.get("PORT", "(not set)"),
+    }
+
+
 @app.post("/chat", response_model=ChatResponse)
 @limiter.limit(RATE_LIMIT_CHAT)
 async def chat(request: Request, chat_request: ChatRequest):
