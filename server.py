@@ -359,9 +359,12 @@ if APP_ENV != "production":
 
 if __name__ == "__main__":
     import uvicorn
+    port = int(os.getenv("PORT", "8000"))
+    is_dev = APP_ENV != "production" and os.getenv("PORT") is None
+    logger.info("Starting uvicorn on 0.0.0.0:%d (reload=%s)", port, is_dev)
     uvicorn.run(
         "server:app",
         host="0.0.0.0",
-        port=int(os.getenv("PORT", "8000")),
-        reload=APP_ENV != "production",
+        port=port,
+        reload=is_dev,
     )

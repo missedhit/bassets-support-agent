@@ -1,17 +1,16 @@
 FROM python:3.12-slim
 
+# Force unbuffered stdout/stderr so crash logs are visible in Railway
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application
 COPY . .
-
-# Don't copy .env into the image — secrets come from environment variables
 RUN rm -f .env
 
-EXPOSE 8000
-
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use python server.py (not uvicorn CLI) so PORT is read from env
+# via os.getenv — no shell expansion issues, works in exec form
+CMD ["python", "server.py"]
