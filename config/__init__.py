@@ -1,11 +1,16 @@
 """
-Configuration for the Bassets Support Agent ingestion pipeline.
+Configuration for the Bassets Support Agent.
 """
 
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# --- Application ---
+APP_ENV = os.getenv("APP_ENV", "development")  # development | production
+RATE_LIMIT_CHAT = os.getenv("RATE_LIMIT_CHAT", "20/minute")
+RATE_LIMIT_GENERAL = os.getenv("RATE_LIMIT_GENERAL", "60/minute")
 
 # --- Pinecone ---
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")

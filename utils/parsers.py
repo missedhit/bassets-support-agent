@@ -171,7 +171,7 @@ def parse_zoho_tickets(file_path: str) -> list[Document]:
                 parts.append(f"Answer: {resolution}")
 
             text = "\n\n".join(parts)
-            if text.strip() and len(text) > 20:  # Skip near-empty tickets
+            if text.strip() and len(text) > 50:  # Skip near-empty tickets
                 docs.append(Document(
                     text=text,
                     metadata={
@@ -238,16 +238,15 @@ def _map_zoho_columns(headers: list[str], original: list[str]) -> dict:
     """Flexibly map Zoho ticket CSV columns."""
     mapping = {}
     for i, h in enumerate(headers):
-        # Use exact matches first to avoid greedy partial matches
-        if h in ('subject', 'ticket subject', 'title'):
+        if 'subject' in h or 'title' in h:
             mapping['subject'] = original[i]
-        elif h in ('description', 'ticket description'):
+        elif 'description' in h and 'resolution' not in h:
             mapping['description'] = original[i]
-        elif h in ('resolution', 'solution', 'answer'):
+        elif any(w in h for w in ['resolution', 'solution', 'answer', 'comment']):
             mapping['resolution'] = original[i]
-        elif h == 'status':
+        elif 'status' in h:
             mapping['status'] = original[i]
-        elif h in ('category', 'classification'):
+        elif any(w in h for w in ['category', 'classification', 'type']):
             mapping['category'] = original[i]
     return mapping
 

@@ -53,7 +53,7 @@ def embed_texts(
         batch = texts[i : i + batch_size]
 
         # Retry with backoff on rate limits
-        for attempt in range(5):
+        for attempt in range(3):
             try:
                 result = client.embed(
                     texts=batch,
@@ -63,7 +63,7 @@ def embed_texts(
                 all_embeddings.extend(result.embeddings)
                 break
             except Exception as e:
-                if "rate" in str(e).lower() and attempt < 4:
+                if "rate" in str(e).lower() and attempt < 2:
                     wait = (attempt + 1) * 5
                     print(f"  Rate limited, waiting {wait}s...")
                     time.sleep(wait)

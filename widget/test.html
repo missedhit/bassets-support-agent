@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bassets Support Widget - Test Page</title>
+  <style>
+    body {
+      font-family: -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 60px auto;
+      padding: 20px;
+      color: #333;
+    }
+    h1 { color: #1A5276; margin-bottom: 8px; }
+    p { line-height: 1.6; color: #666; }
+    .box {
+      background: #F0F4F8;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 24px 0;
+    }
+    code {
+      background: #E8ECF0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bassets Fixed Asset Management</h1>
+  <p>This is a test page for the support chat widget. Look for the chat bubble in the bottom-right corner.</p>
+
+  <div class="box">
+    <h3>Testing the widget</h3>
+    <p>1. Make sure the server is running: <code>python server.py</code></p>
+    <p>2. Click the chat bubble in the bottom-right corner</p>
+    <p>3. Ask a question about depreciation, asset management, or Bassets software</p>
+  </div>
+
+  <div class="box">
+    <h3>Embedding on your real site</h3>
+    <p>Add this one line before <code>&lt;/body&gt;</code> on any page of bassets.net:</p>
+    <p><code>&lt;script src="https://your-server.com/widget.js" data-api="https://your-server.com"&gt;&lt;/script&gt;</code></p>
+  </div>
+
+  <!-- THE CHAT WIDGET: This single line is all you need on any page -->
+  <script src="widget.js" data-api="http://localhost:8000"></script>
+</body>
+</html>
