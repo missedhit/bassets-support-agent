@@ -24,52 +24,62 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
-# Early logging so we can see startup issues in Railway logs
+# ---- Logging Setup (before anything else) ----
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
     stream=sys.stdout,
+    force=True,
 )
-_boot_logger = logging.getLogger("bassets.boot")
-_boot_logger.info("=== Bassets Support Agent starting ===")
-_boot_logger.info("Python %s on %s", sys.version, sys.platform)
-_boot_logger.info("PORT=%s", os.environ.get("PORT", "(not set)"))
-
-try:
-    _boot_logger.info("Importing FastAPI...")
-    from fastapi import FastAPI, HTTPException, Request
-    from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.responses import StreamingResponse, FileResponse
-    from fastapi.staticfiles import StaticFiles
-    from pydantic import BaseModel, Field, field_validator
-    from slowapi import _rate_limit_exceeded_handler
-    from slowapi.errors import RateLimitExceeded
-
-    # Add project root to path
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-    _boot_logger.info("Importing config...")
-    from config import APP_ENV, RATE_LIMIT_CHAT, RATE_LIMIT_GENERAL
-
-    _boot_logger.info("Importing agent (rag pipeline)...")
-    from agent.rag import generate_answer
-
-    _boot_logger.info("Importing middleware...")
-    from middleware import (
-        SecurityHeadersMiddleware,
-        RequestLoggingMiddleware,
-        limiter,
-    )
-    _boot_logger.info("All imports succeeded.")
-except Exception as e:
-    _boot_logger.exception("FATAL: Import failed — %s", e)
-    raise
-
-# ---- Logging Setup ----
-# (basicConfig already called above during boot)
 logger = logging.getLogger("bassets.api")
 
-logger.info("Starting Bassets Support Agent (APP_ENV=%s)", APP_ENV)
+logger.info("=== Bassets Support Agent starting ===")
+logger.info("Python %s on %s", sys.version, sys.platform)
+logger.info("PORT=%s", os.environ.get("PORT", "(not set)"))
+
+# ---- Lightweight imports only (no RAG/AI deps at startup) ----
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field, field_validator
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+# Add project root to path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from config import APP_ENV, RATE_LIMIT_CHAT, RATE_LIMIT_GENERAL
+from middleware import (
+    SecurityHeadersMiddleware,
+    RequestLoggingMiddleware,
+    limiter,
+)
+
+logger.info("APP_ENV=%s — core imports done, setting up app...", APP_ENV)
+
+
+# ---- Lazy RAG loader ----
+# Heavy deps (voyageai, pinecone, anthropic, numpy, langchain, tokenizers...)
+# are only imported on first chat request, NOT at startup.
+# This lets the server boot fast and pass Railway healthchecks.
+
+_generate_answer = None
+
+
+def _get_generate_answer():
+    """Lazy-import the RAG pipeline on first use."""
+    global _generate_answer
+    if _generate_answer is None:
+        logger.info("First chat request — loading RAG pipeline...")
+        t0 = time.time()
+        from agent.rag import generate_answer
+        _generate_answer = generate_answer
+        logger.info("RAG pipeline loaded in %.1fs", time.time() - t0)
+    return _generate_answer
+
 
 # ---- App Setup ----
 
@@ -115,6 +125,8 @@ app.add_middleware(
 _static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 if os.path.isdir(_static_dir):
     app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+
+logger.info("FastAPI app ready — waiting for uvicorn to bind port")
 
 
 # ---- In-Memory Session Store ----
@@ -227,6 +239,7 @@ async def chat(request: Request, chat_request: ChatRequest):
     try:
         session_id, history = get_or_create_session(chat_request.session_id)
 
+        generate_answer = _get_generate_answer()
         result = generate_answer(
             question=chat_request.message,
             conversation_history=history if history else None,
@@ -266,6 +279,7 @@ async def chat_stream(request: Request, chat_request: ChatRequest):
     try:
         session_id, history = get_or_create_session(chat_request.session_id)
 
+        generate_answer = _get_generate_answer()
         result = generate_answer(
             question=chat_request.message,
             conversation_history=history if history else None,
