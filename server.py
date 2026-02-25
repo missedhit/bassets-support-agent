@@ -48,8 +48,11 @@ from middleware import (
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
+    stream=sys.stdout,
 )
 logger = logging.getLogger("bassets.api")
+
+logger.info("Starting Bassets Support Agent (APP_ENV=%s)", APP_ENV)
 
 # ---- App Setup ----
 
