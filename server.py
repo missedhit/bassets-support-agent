@@ -243,6 +243,58 @@ async def health_debug():
     }
 
 
+@app.get("/health/test-rag")
+async def test_rag():
+    """Test each RAG pipeline component individually to pinpoint failures."""
+    results = {}
+
+    # 1. Test Pinecone connection
+    try:
+        from config import PINECONE_API_KEY, PINECONE_INDEX_NAME
+        from pinecone import Pinecone
+        pc = Pinecone(api_key=PINECONE_API_KEY)
+        index = pc.Index(PINECONE_INDEX_NAME)
+        stats = index.describe_index_stats()
+        results["pinecone"] = {
+            "status": "ok",
+            "index": PINECONE_INDEX_NAME,
+            "total_vectors": stats.total_vector_count,
+            "dimensions": stats.dimension,
+        }
+    except Exception as e:
+        results["pinecone"] = {"status": "error", "error": str(e)}
+
+    # 2. Test Voyage AI embeddings
+    try:
+        from utils.embedder import embed_query
+        vec = embed_query("test")
+        results["voyage"] = {
+            "status": "ok",
+            "embedding_dims": len(vec),
+        }
+    except Exception as e:
+        results["voyage"] = {"status": "error", "error": str(e)}
+
+    # 3. Test Anthropic connection
+    try:
+        import anthropic
+        client = anthropic.Anthropic()
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=10,
+            messages=[{"role": "user", "content": "Say hi"}],
+        )
+        results["anthropic"] = {
+            "status": "ok",
+            "model": "claude-sonnet-4-6",
+            "response": resp.content[0].text[:50],
+        }
+    except Exception as e:
+        results["anthropic"] = {"status": "error", "error": str(e)}
+
+    return results
+
+
 @app.post("/chat", response_model=ChatResponse)
 @limiter.limit(RATE_LIMIT_CHAT)
 async def chat(request: Request, chat_request: ChatRequest):
