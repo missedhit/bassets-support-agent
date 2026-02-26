@@ -1,7 +1,7 @@
 # Bassets Support Agent - Document Ingestion Pipeline
 
 # Vector database
-pinecone-client>=3.0.0
+pinecone>=5.0.0
 
 # Embeddings
 voyageai>=0.3.0
